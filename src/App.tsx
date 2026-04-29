@@ -4,14 +4,17 @@ import { Check, Plus, Trash2, X } from 'lucide-react';
 import type { Store, Khatam } from './types';
 import { getStore, addKhatam, deleteKhatam, updateCurrentPage, TOTAL_PAGES } from './store';
 
-const SERIF = "'Cormorant Garamond', Georgia, serif";
+// Lora only for display moments — numbers, dates, the hero stat.
+// Everything else is Inter.
+const SERIF = "'Lora', Georgia, serif";
 const GREEN = '#2a5c3f';
-const GREEN_LIGHT = '#3a7a55';
-const SAND = '#f5f0e8';
-const SAND_DARK = '#e8dfd0';
-const SAND_MID = '#d4c5a9';
-const BROWN = '#7d6244';
-const DARK = '#1a1410';
+const GREEN_LIGHT = '#3d7a56';
+const BG = '#f8f7f4';
+const SURFACE = '#ffffff';
+const BORDER = '#e8e4dc';
+const MUTED = '#9e9689';
+const LABEL = '#6b6560';
+const DARK = '#1c1917';
 
 function daysAgo(dateStr: string) {
   return differenceInDays(new Date(), parseISO(dateStr));
@@ -55,78 +58,81 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: `linear-gradient(175deg, #faf7f2 0%, ${SAND} 50%, #ede5d8 100%)` }}>
+    <div style={{ minHeight: '100vh', background: BG }}>
 
       {/* Nav */}
-      <nav style={{ padding: '28px 24px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+      <nav style={{ padding: '32px 24px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 36, height: 36, borderRadius: 10, background: GREEN,
+          width: 34, height: 34, borderRadius: 9, background: GREEN,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
         </div>
-        <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600, color: DARK, letterSpacing: '0.01em' }}>
+        {/* Lora only for the wordmark — one serif touch in the nav */}
+        <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
           Khatam
         </span>
       </nav>
 
-      {/* Hero headline */}
-      <header style={{ textAlign: 'center', padding: '32px 24px 40px' }}>
-        <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(42px, 8vw, 72px)', fontWeight: 300, color: DARK, lineHeight: 1.05, letterSpacing: '-0.01em' }}>
+      {/* Hero headline — Inter, large, tight */}
+      <header style={{ textAlign: 'center', padding: '28px 24px 36px' }}>
+        <h1 style={{
+          fontSize: 'clamp(36px, 7vw, 58px)',
+          fontWeight: 500,
+          color: DARK,
+          lineHeight: 1.08,
+          letterSpacing: '-0.025em',
+          marginBottom: 10,
+        }}>
           Your Sacred Journey
         </h1>
-        <p style={{ marginTop: 10, fontSize: 14, color: BROWN, letterSpacing: '0.03em' }}>
+        <p style={{ fontSize: 15, color: MUTED, letterSpacing: '-0.01em' }}>
           Track your Quran completions with gratitude
         </p>
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '0 20px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '0 20px 80px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Days since card */}
         <div style={{
-          borderRadius: 28, overflow: 'hidden',
-          background: `linear-gradient(145deg, ${GREEN} 0%, #1e4030 100%)`,
-          boxShadow: `0 24px 64px rgba(42,92,63,0.3), 0 4px 16px rgba(0,0,0,0.1)`,
-          padding: '44px 36px',
+          borderRadius: 24,
+          background: `linear-gradient(150deg, ${GREEN} 0%, #1d3d2a 100%)`,
+          boxShadow: `0 20px 60px rgba(42,92,63,0.28), 0 2px 8px rgba(0,0,0,0.08)`,
+          padding: '40px 32px',
           textAlign: 'center',
           position: 'relative',
+          overflow: 'hidden',
         }}>
-          {/* Subtle texture circle */}
-          <div style={{
-            position: 'absolute', top: -60, right: -60,
-            width: 220, height: 220, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.04)',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: -40, left: -40,
-            width: 160, height: 160, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.03)',
-          }} />
+          <div style={{ position: 'absolute', top: -80, right: -80, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+          <div style={{ position: 'absolute', bottom: -50, left: -50, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
 
           {latest ? (
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 20 }}>
-                Last Khatam
+              <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 18 }}>
+                Last khatam
               </p>
-              <div style={{ fontFamily: SERIF, fontSize: 'clamp(80px, 18vw, 120px)', fontWeight: 300, color: '#fff', lineHeight: 1, marginBottom: 4 }}>
+              {/* The one big serif moment */}
+              <div style={{ fontFamily: SERIF, fontSize: 'clamp(72px, 16vw, 108px)', fontWeight: 400, color: '#fff', lineHeight: 1, marginBottom: 6 }}>
                 {days}
               </div>
-              <p style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 300, color: 'rgba(255,255,255,0.65)' }}>
+              <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 22, fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>
                 {days === 0 ? 'completed today' : days === 1 ? 'day ago' : 'days ago'}
               </p>
-              <div style={{ marginTop: 24, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-              <p style={{ marginTop: 20, fontSize: 13, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.02em' }}>
+              <div style={{ margin: '22px auto 0', height: 1, maxWidth: 120, background: 'rgba(255,255,255,0.1)' }} />
+              <p style={{ marginTop: 18, fontSize: 13, color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.01em' }}>
                 {fmtDate(latest.completedAt)}
               </p>
             </div>
           ) : (
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <p style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, color: 'rgba(255,255,255,0.9)', marginBottom: 10 }}>
-                Begin Your Record
+              <p style={{ fontSize: 24, fontWeight: 500, color: 'rgba(255,255,255,0.85)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+                Begin your record
               </p>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', letterSpacing: '-0.01em' }}>
                 Log your first khatam to start tracking
               </p>
             </div>
@@ -136,20 +142,22 @@ export default function App() {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[
-            { label: 'Current Page', value: store.currentPage },
-            { label: 'Pages Left', value: pagesLeft },
-            { label: 'Total Khatams', value: store.khatams.length },
+            { label: 'Current page', value: store.currentPage },
+            { label: 'Pages left', value: pagesLeft },
+            { label: 'Total khatams', value: store.khatams.length },
           ].map(({ label, value }) => (
             <div key={label} style={{
-              borderRadius: 20, background: '#fff',
-              boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-              padding: '22px 16px',
+              borderRadius: 18,
+              background: SURFACE,
+              border: `1px solid ${BORDER}`,
+              padding: '20px 14px',
               textAlign: 'center',
             }}>
-              <div style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 300, color: DARK, lineHeight: 1 }}>
+              {/* Lora for the number */}
+              <div style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 400, color: DARK, lineHeight: 1, marginBottom: 6 }}>
                 {value}
               </div>
-              <div style={{ fontSize: 11, color: SAND_MID, marginTop: 6, letterSpacing: '0.03em' }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: MUTED, letterSpacing: '0.02em' }}>
                 {label}
               </div>
             </div>
@@ -158,19 +166,22 @@ export default function App() {
 
         {/* Progress card */}
         <div style={{
-          borderRadius: 24, background: '#fff',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-          padding: '28px 28px 24px',
+          borderRadius: 20,
+          background: SURFACE,
+          border: `1px solid ${BORDER}`,
+          padding: '24px 24px 22px',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-            <span style={{ fontFamily: SERIF, fontSize: 20, color: DARK }}>Reading Progress</span>
-            <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 300, color: GREEN }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
+              Reading progress
+            </span>
+            {/* Lora for the percentage */}
+            <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, color: GREEN, lineHeight: 1 }}>
               {Math.round(progress)}%
             </span>
           </div>
 
-          {/* Track */}
-          <div style={{ height: 6, borderRadius: 999, background: SAND_DARK, marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ height: 5, borderRadius: 999, background: BORDER, marginBottom: 20, overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: 999,
               background: `linear-gradient(90deg, ${GREEN} 0%, ${GREEN_LIGHT} 100%)`,
@@ -179,117 +190,111 @@ export default function App() {
             }} />
           </div>
 
-          {/* Page input */}
-          <form onSubmit={submitPage} style={{ display: 'flex', gap: 10 }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <input
-                type="number"
-                value={pageInput}
-                onChange={(e) => setPageInput(e.target.value)}
-                min={1}
-                max={TOTAL_PAGES}
-                placeholder={`Page 1 – ${TOTAL_PAGES}`}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: 14,
-                  border: '1.5px solid #e8dfd0',
-                  background: SAND,
-                  fontSize: 15,
-                  color: DARK,
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = GREEN; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e8dfd0'; }}
-              />
-            </div>
+          <form onSubmit={submitPage} style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="number"
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              min={1}
+              max={TOTAL_PAGES}
+              placeholder={`Page 1 – ${TOTAL_PAGES}`}
+              style={{
+                flex: 1,
+                padding: '11px 14px',
+                borderRadius: 12,
+                border: `1.5px solid ${BORDER}`,
+                background: BG,
+                fontSize: 14,
+                color: DARK,
+                outline: 'none',
+                transition: 'border-color 0.15s',
+                letterSpacing: '-0.01em',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = GREEN; }}
+              onBlur={(e) => { e.target.style.borderColor = BORDER; }}
+            />
             <button
               type="submit"
               style={{
-                padding: '12px 22px',
-                borderRadius: 14,
+                padding: '11px 20px',
+                borderRadius: 12,
                 background: pageSaved ? GREEN : DARK,
                 color: '#fff',
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 500,
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'background 0.2s, transform 0.1s',
+                transition: 'background 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
                 whiteSpace: 'nowrap',
+                letterSpacing: '-0.01em',
               }}
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.96)'; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
             >
-              {pageSaved ? <Check size={15} /> : 'Update Page'}
+              {pageSaved ? <Check size={14} /> : 'Update page'}
             </button>
           </form>
         </div>
 
-        {/* Log khatam button / form */}
+        {/* Log khatam */}
         {!showForm ? (
           <button
             onClick={() => setShowForm(true)}
             style={{
               width: '100%',
-              padding: '18px 24px',
-              borderRadius: 24,
-              background: '#fff',
-              boxShadow: '0 2px 16px rgba(0,0,0,0.05)',
-              border: '1.5px dashed #d4c5a9',
+              padding: '17px 22px',
+              borderRadius: 20,
+              background: SURFACE,
+              border: `1.5px dashed ${BORDER}`,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 10,
-              transition: 'border-color 0.2s, box-shadow 0.2s',
+              transition: 'border-color 0.15s',
             }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = GREEN;
-              (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 24px rgba(42,92,63,0.12)`;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = '#d4c5a9';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 16px rgba(0,0,0,0.05)';
-            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = GREEN; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = BORDER; }}
           >
             <div style={{
-              width: 28, height: 28, borderRadius: 8, background: '#f0ebe0',
+              width: 26, height: 26, borderRadius: 7,
+              background: BG, border: `1px solid ${BORDER}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Plus size={14} color={GREEN} />
+              <Plus size={13} color={LABEL} />
             </div>
-            <span style={{ fontFamily: SERIF, fontSize: 18, color: DARK }}>Log a Khatam</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
+              Log a khatam
+            </span>
           </button>
         ) : (
           <div style={{
-            borderRadius: 24, background: '#fff',
-            boxShadow: '0 4px 32px rgba(0,0,0,0.08)',
-            padding: '28px',
+            borderRadius: 20,
+            background: SURFACE,
+            border: `1px solid ${BORDER}`,
+            padding: '24px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: DARK }}>
-                Record a Completion
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: DARK, letterSpacing: '-0.02em' }}>
+                Record a completion
               </h2>
               <button
                 onClick={() => setShowForm(false)}
                 style={{
-                  width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: SAND, cursor: 'pointer',
+                  width: 30, height: 30, borderRadius: 8, border: 'none',
+                  background: BG, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <X size={14} color={BROWN} />
+                <X size={13} color={LABEL} />
               </button>
             </div>
 
-            <form onSubmit={submitKhatam} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={submitKhatam} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: BROWN, marginBottom: 8 }}>
-                  Completion Date
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: LABEL, marginBottom: 7, letterSpacing: '-0.005em' }}>
+                  Completion date
                 </label>
                 <input
                   type="date"
@@ -298,17 +303,19 @@ export default function App() {
                   max={format(new Date(), 'yyyy-MM-dd')}
                   onChange={(e) => setNewDate(e.target.value)}
                   style={{
-                    width: '100%', padding: '13px 16px',
-                    borderRadius: 14, border: '1.5px solid #e8dfd0',
-                    background: SAND, fontSize: 15, color: DARK, outline: 'none',
+                    width: '100%', padding: '12px 14px',
+                    borderRadius: 12, border: `1.5px solid ${BORDER}`,
+                    background: BG, fontSize: 14, color: DARK, outline: 'none',
+                    letterSpacing: '-0.01em',
                   }}
                   onFocus={(e) => { e.target.style.borderColor = GREEN; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e8dfd0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = BORDER; }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: BROWN, marginBottom: 8 }}>
-                  Reflection <span style={{ opacity: 0.5, textTransform: 'none', letterSpacing: 0 }}>— optional</span>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: LABEL, marginBottom: 7, letterSpacing: '-0.005em' }}>
+                  Reflection{' '}
+                  <span style={{ fontWeight: 400, color: MUTED }}>— optional</span>
                 </label>
                 <textarea
                   value={newNotes}
@@ -316,30 +323,30 @@ export default function App() {
                   placeholder="A thought, du'a, or memory from this khatam…"
                   rows={3}
                   style={{
-                    width: '100%', padding: '13px 16px',
-                    borderRadius: 14, border: '1.5px solid #e8dfd0',
-                    background: SAND, fontSize: 15, color: DARK, outline: 'none',
-                    resize: 'none', lineHeight: 1.6,
+                    width: '100%', padding: '12px 14px',
+                    borderRadius: 12, border: `1.5px solid ${BORDER}`,
+                    background: BG, fontSize: 14, color: DARK, outline: 'none',
+                    resize: 'none', lineHeight: 1.6, letterSpacing: '-0.01em',
                   }}
                   onFocus={(e) => { e.target.style.borderColor = GREEN; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e8dfd0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = BORDER; }}
                 />
               </div>
               <button
                 type="submit"
                 style={{
-                  padding: '15px',
-                  borderRadius: 14,
-                  background: `linear-gradient(135deg, ${GREEN} 0%, #1e4030 100%)`,
+                  padding: '13px',
+                  borderRadius: 12,
+                  background: GREEN,
                   color: '#fff',
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: 500,
                   border: 'none',
                   cursor: 'pointer',
-                  letterSpacing: '0.02em',
+                  letterSpacing: '-0.01em',
                 }}
               >
-                Record Khatam
+                Record khatam
               </button>
             </form>
           </div>
@@ -347,11 +354,11 @@ export default function App() {
 
         {/* History */}
         {store.khatams.length > 0 && (
-          <section>
-            <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: BROWN, margin: '8px 4px 12px' }}>
+          <section style={{ marginTop: 6 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 600, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 2px 12px' }}>
               History
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {store.khatams.map((k: Khatam, i: number) => (
                 <HistoryCard
                   key={k.id}
@@ -366,11 +373,11 @@ export default function App() {
 
         {/* Empty state */}
         {store.khatams.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px 0 10px' }}>
-            <p style={{ fontFamily: SERIF, fontSize: 28, color: SAND_MID, marginBottom: 8 }}>
+          <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 20, color: MUTED, marginBottom: 6 }}>
               اَلْحَمْدُ لِلّٰهِ
             </p>
-            <p style={{ fontSize: 13, color: SAND_MID }}>
+            <p style={{ fontSize: 13, color: MUTED }}>
               Your completions will appear here
             </p>
           </div>
@@ -378,7 +385,7 @@ export default function App() {
       </main>
 
       <footer style={{ textAlign: 'center', paddingBottom: 40 }}>
-        <p style={{ fontSize: 12, color: SAND_MID, letterSpacing: '0.03em' }}>
+        <p style={{ fontSize: 12, color: MUTED, letterSpacing: '-0.005em' }}>
           May Allah accept your recitation
         </p>
       </footer>
@@ -396,52 +403,53 @@ function HistoryCard({ khatam, number, onDelete }: { khatam: Khatam; number: num
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setConfirm(false); }}
       style={{
-        borderRadius: 20,
-        background: '#fff',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-        padding: '18px 20px',
+        borderRadius: 16,
+        background: SURFACE,
+        border: `1px solid ${BORDER}`,
+        padding: '16px 18px',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 16,
-        transition: 'box-shadow 0.2s',
-        ...(hovered ? { boxShadow: '0 4px 20px rgba(0,0,0,0.08)' } : {}),
+        gap: 14,
+        transition: 'border-color 0.15s',
+        ...(hovered ? { borderColor: '#d0ccc4' } : {}),
       }}
     >
       {/* Number badge */}
       <div style={{
-        minWidth: 36, height: 36, borderRadius: 10,
-        background: '#f5f0e8',
+        minWidth: 32, height: 32, borderRadius: 8,
+        background: BG, border: `1px solid ${BORDER}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginTop: 1,
+        marginTop: 1, flexShrink: 0,
       }}>
-        <span style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 500, color: BROWN }}>
+        <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 400, color: LABEL }}>
           {number}
         </span>
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: DARK }}>
+        {/* Lora for the date — the serif touch in history */}
+        <p style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
           {fmtDate(khatam.completedAt)}
         </p>
         {khatam.notes && (
-          <p style={{ fontFamily: SERIF, fontSize: 15, fontStyle: 'italic', color: BROWN, marginTop: 3 }}>
+          <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: LABEL, marginTop: 3, lineHeight: 1.5 }}>
             "{khatam.notes}"
           </p>
         )}
-        <p style={{ fontSize: 12, color: SAND_MID, marginTop: 4 }}>
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 4, letterSpacing: '-0.005em' }}>
           {days === 0 ? 'Today' : `${days} day${days === 1 ? '' : 's'} ago`}
         </p>
       </div>
 
       {/* Delete */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', opacity: hovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', flexShrink: 0 }}>
         {confirm ? (
           <>
             <button
               onClick={onDelete}
               style={{
-                padding: '6px 12px', borderRadius: 8, border: 'none',
+                padding: '5px 11px', borderRadius: 7, border: 'none',
                 background: '#fee2e2', color: '#dc2626',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
               }}
@@ -451,8 +459,8 @@ function HistoryCard({ khatam, number, onDelete }: { khatam: Khatam; number: num
             <button
               onClick={() => setConfirm(false)}
               style={{
-                padding: '6px 12px', borderRadius: 8, border: 'none',
-                background: '#f5f0e8', color: BROWN,
+                padding: '5px 11px', borderRadius: 7, border: 'none',
+                background: BG, color: LABEL,
                 fontSize: 12, cursor: 'pointer',
               }}
             >
@@ -463,12 +471,12 @@ function HistoryCard({ khatam, number, onDelete }: { khatam: Khatam; number: num
           <button
             onClick={() => setConfirm(true)}
             style={{
-              width: 30, height: 30, borderRadius: 8, border: 'none',
-              background: '#f5f0e8', cursor: 'pointer',
+              width: 28, height: 28, borderRadius: 7, border: 'none',
+              background: BG, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Trash2 size={13} color={SAND_MID} />
+            <Trash2 size={12} color={MUTED} />
           </button>
         )}
       </div>
