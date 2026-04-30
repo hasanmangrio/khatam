@@ -9,8 +9,11 @@ function load(): Store {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // migrate stores that predate pageHistory
       if (!parsed.pageHistory) parsed.pageHistory = [];
+      // backfill startPage on entries written before the field existed
+      parsed.pageHistory = parsed.pageHistory.map((e: PageEntry) =>
+        e.startPage !== undefined ? e : { ...e, startPage: e.page }
+      );
       return parsed;
     }
   } catch {}
@@ -90,8 +93,9 @@ export function getDailyReadings(history: PageEntry[], numDays = 7): DayReading[
     if (!todayEntry) return { date, pagesRead: null, endPage: null };
 
     const prevPage = pageOnOrBefore(history, prevDate);
-    // Prefer cross-day diff; fall back to intra-day diff via startPage
-    const baseline = prevPage ?? (todayEntry.startPage - 1);
+    // startPage may be absent on entries written before this field existed
+    const startPage = todayEntry.startPage ?? todayEntry.page;
+    const baseline = prevPage ?? (startPage - 1);
     const pagesRead = Math.max(0, todayEntry.page - baseline);
 
     return { date, pagesRead, endPage: todayEntry.page };
