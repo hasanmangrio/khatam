@@ -4,7 +4,19 @@ export interface Khatam {
   notes?: string;
 }
 
+export interface PageEntry {
+  date: string;  // YYYY-MM-DD
+  page: number;
+}
+
 export interface Store {
   khatams: Khatam[];
   currentPage: number;
+  pageHistory: PageEntry[];
+}
+
+export interface DayReading {
+  date: string;       // YYYY-MM-DD
+  pagesRead: number | null;  // null = no log that day
+  endPage: number | null;
 }

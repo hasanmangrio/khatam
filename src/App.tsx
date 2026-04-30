@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { differenceInDays, format, parseISO, isToday, isYesterday } from 'date-fns';
 import { Check, Plus, Trash2, X } from 'lucide-react';
-import type { Store, Khatam } from './types';
-import { getStore, addKhatam, deleteKhatam, updateCurrentPage, TOTAL_PAGES } from './store';
+import type { Store, Khatam, DayReading } from './types';
+import { getStore, addKhatam, deleteKhatam, updateCurrentPage, getDailyReadings, TOTAL_PAGES } from './store';
 
 // Lora only for display moments — numbers, dates, the hero stat.
 // Everything else is Inter.
@@ -36,6 +36,7 @@ export default function App() {
   const days = latest ? daysAgo(latest.completedAt) : null;
   const progress = Math.min(100, ((store.currentPage - 1) / (TOTAL_PAGES - 1)) * 100);
   const pagesLeft = TOTAL_PAGES - store.currentPage;
+  const readings = getDailyReadings(store.pageHistory, 7);
 
   useEffect(() => { setPageInput(String(store.currentPage)); }, [store.currentPage]);
 
@@ -163,6 +164,9 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        {/* Reading schedule */}
+        <ReadingSchedule readings={readings} />
 
         {/* Progress card */}
         <div style={{
@@ -389,6 +393,89 @@ export default function App() {
           May Allah accept your recitation
         </p>
       </footer>
+    </div>
+  );
+}
+
+function dayLabel(dateStr: string): string {
+  const d = parseISO(dateStr);
+  if (isToday(d)) return 'Today';
+  if (isYesterday(d)) return 'Yesterday';
+  return format(d, 'EEE MMM d');
+}
+
+function ReadingSchedule({ readings }: { readings: DayReading[] }) {
+  const hasAny = readings.some((r) => r.pagesRead !== null);
+  const maxPages = Math.max(1, ...readings.map((r) => r.pagesRead ?? 0));
+
+  return (
+    <div style={{
+      borderRadius: 20,
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      padding: '22px 22px 20px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
+          Recent reading
+        </span>
+        {!hasAny && (
+          <span style={{ fontSize: 12, color: MUTED }}>Update your page to start tracking</span>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+        {/* Reversed so today is rightmost */}
+        {[...readings].reverse().map((r) => {
+          const active = r.pagesRead !== null && r.pagesRead > 0;
+          const logged = r.pagesRead !== null;
+          const barHeight = active ? Math.max(8, Math.round((r.pagesRead! / maxPages) * 48)) : 4;
+
+          return (
+            <div key={r.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              {/* Bar */}
+              <div style={{ width: '100%', height: 56, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <div style={{
+                  width: '60%',
+                  height: barHeight,
+                  borderRadius: 99,
+                  background: active
+                    ? `linear-gradient(180deg, ${GREEN_LIGHT} 0%, ${GREEN} 100%)`
+                    : logged
+                      ? BORDER   // logged but 0 pages (same page as yesterday)
+                      : BORDER,
+                  opacity: active ? 1 : 0.5,
+                  transition: 'height 0.4s cubic-bezier(0.4,0,0.2,1)',
+                }} />
+              </div>
+
+              {/* Pages read number */}
+              <span style={{
+                fontFamily: active ? SERIF : undefined,
+                fontSize: active ? 15 : 13,
+                fontWeight: active ? 400 : 400,
+                color: active ? DARK : MUTED,
+                lineHeight: 1,
+              }}>
+                {active ? r.pagesRead : logged ? '0' : '—'}
+              </span>
+
+              {/* Day label */}
+              <span style={{
+                fontSize: 10,
+                fontWeight: 500,
+                color: active ? LABEL : MUTED,
+                letterSpacing: '0.01em',
+                textAlign: 'center',
+                lineHeight: 1.3,
+                whiteSpace: 'pre-wrap',
+              }}>
+                {dayLabel(r.date).replace(' ', '\n')}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
