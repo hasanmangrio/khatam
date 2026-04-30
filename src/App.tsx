@@ -427,26 +427,35 @@ function GoalCard({
 }) {
   const required = goalDays ? Math.ceil(TOTAL_PAGES / goalDays) : null;
 
-  // Average pages/day over the last 7 logged days
-  const loggedDays = readings.filter((r) => r.pagesRead !== null && r.pagesRead > 0);
-  const avgActual = loggedDays.length
-    ? Math.round(loggedDays.reduce((s, r) => s + r.pagesRead!, 0) / loggedDays.length)
+  // Today's reading
+  const todayReading = readings[0]; // readings[0] is always today
+  const todayPages = todayReading?.pagesRead ?? 0;
+
+  // Average pages/day over logged days (excluding today to avoid bias)
+  const pastDays = readings.slice(1).filter((r) => r.pagesRead !== null && r.pagesRead > 0);
+  const avgActual = pastDays.length
+    ? Math.round(pastDays.reduce((s, r) => s + r.pagesRead!, 0) / pastDays.length)
     : null;
 
-  // How far ahead/behind vs goal, given current page
+  // Ahead/behind based on pages remaining vs goal pace
   const pagesLeft = TOTAL_PAGES - currentPage;
-  let daysToFinishAtGoal: number | null = null;
-  let daysToFinishAtActual: number | null = null;
-  if (required) daysToFinishAtGoal = Math.ceil(pagesLeft / required);
-  if (avgActual) daysToFinishAtActual = Math.ceil(pagesLeft / avgActual);
-
-  const delta = (daysToFinishAtActual !== null && daysToFinishAtGoal !== null)
+  const daysToFinishAtGoal = required ? Math.ceil(pagesLeft / required) : null;
+  const daysToFinishAtActual = avgActual ? Math.ceil(pagesLeft / avgActual) : null;
+  const delta = daysToFinishAtActual !== null && daysToFinishAtGoal !== null
     ? daysToFinishAtGoal - daysToFinishAtActual
     : null;
 
+  // Today's ring: how far through the daily goal
+  const todayPct = required ? Math.min(1, todayPages / required) : 0;
+  const RING = 52; // SVG radius
+  const STROKE = 5;
+  const CIRC = 2 * Math.PI * RING;
+  const met = required !== null && todayPages >= required;
+
   return (
     <div style={{ borderRadius: 20, background: SURFACE, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-      {/* Header */}
+
+      {/* Chip selector */}
       <div style={{ padding: '22px 22px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
           <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
@@ -458,8 +467,6 @@ function GoalCard({
             </span>
           )}
         </div>
-
-        {/* Preset chips */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {GOAL_PRESETS.map((preset) => {
             const active = goalDays === preset.days;
@@ -468,19 +475,16 @@ function GoalCard({
                 key={preset.days}
                 onClick={() => onSelect(preset.days)}
                 style={{
-                  padding: '10px 8px',
-                  borderRadius: 12,
+                  padding: '10px 8px', borderRadius: 12, cursor: 'pointer',
                   border: `1.5px solid ${active ? GREEN : BORDER}`,
-                  background: active ? `${GREEN}0f` : BG,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'border-color 0.15s, background 0.15s',
+                  background: active ? `${GREEN}12` : BG,
+                  textAlign: 'center', transition: 'border-color 0.15s, background 0.15s',
                 }}
               >
                 <div style={{ fontSize: 13, fontWeight: 600, color: active ? GREEN : DARK, letterSpacing: '-0.01em' }}>
                   {preset.label}
                 </div>
-                <div style={{ fontSize: 10, color: active ? GREEN : MUTED, marginTop: 2, opacity: active ? 0.8 : 1 }}>
+                <div style={{ fontSize: 10, color: active ? GREEN : MUTED, marginTop: 2 }}>
                   {preset.sublabel}
                 </div>
               </button>
@@ -489,66 +493,103 @@ function GoalCard({
         </div>
       </div>
 
-      {/* Required pace — shown once a goal is set */}
+      {/* Today + required pace — shown once a goal is set */}
       {required && (
-        <div style={{ borderTop: `1px solid ${BORDER}`, padding: '18px 22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ fontSize: 12, color: MUTED, marginBottom: 4, letterSpacing: '-0.005em' }}>
-                Pages needed per day
-              </p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 400, color: DARK, lineHeight: 1 }}>
-                  {required}
-                </span>
-                <span style={{ fontSize: 13, color: MUTED }}>pages / day</span>
-              </div>
-            </div>
+        <div style={{ borderTop: `1px solid ${BORDER}`, padding: '20px 22px', display: 'flex', gap: 20, alignItems: 'center' }}>
 
-            {/* On-track indicator */}
-            {avgActual !== null && delta !== null && (
-              <div style={{
-                padding: '8px 14px',
-                borderRadius: 10,
-                background: delta >= 0 ? '#f0faf4' : '#fdf3f0',
-                border: `1px solid ${delta >= 0 ? '#bbddc9' : '#f4c5b4'}`,
-                textAlign: 'center',
-              }}>
-                <p style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 400, color: delta >= 0 ? '#2a6645' : '#b94f2a', lineHeight: 1 }}>
-                  {delta >= 0 ? `${delta}d` : `${Math.abs(delta)}d`}
-                </p>
-                <p style={{ fontSize: 10, fontWeight: 500, color: delta >= 0 ? '#3d8a5e' : '#c86040', marginTop: 3, letterSpacing: '0.02em' }}>
-                  {delta >= 0 ? 'ahead' : 'behind'}
-                </p>
-              </div>
-            )}
+          {/* Ring showing today's progress toward the daily goal */}
+          <div style={{ position: 'relative', flexShrink: 0, width: RING * 2 + STROKE, height: RING * 2 + STROKE }}>
+            <svg
+              width={RING * 2 + STROKE}
+              height={RING * 2 + STROKE}
+              style={{ transform: 'rotate(-90deg)' }}
+            >
+              {/* Track */}
+              <circle
+                cx={RING + STROKE / 2}
+                cy={RING + STROKE / 2}
+                r={RING}
+                fill="none"
+                stroke={BORDER}
+                strokeWidth={STROKE}
+              />
+              {/* Fill */}
+              {todayPages > 0 && (
+                <circle
+                  cx={RING + STROKE / 2}
+                  cy={RING + STROKE / 2}
+                  r={RING}
+                  fill="none"
+                  stroke={met ? GREEN : GREEN_LIGHT}
+                  strokeWidth={STROKE}
+                  strokeLinecap="round"
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={CIRC * (1 - todayPct)}
+                  style={{ transition: 'stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1)' }}
+                />
+              )}
+            </svg>
+            {/* Center label */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: DARK, lineHeight: 1 }}>
+                {todayPages}
+              </span>
+              <span style={{ fontSize: 9, color: MUTED, marginTop: 2, letterSpacing: '0.02em' }}>
+                today
+              </span>
+            </div>
           </div>
 
-          {/* Actual vs required */}
-          {avgActual !== null && (
-            <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 4, borderRadius: 999, background: BORDER, overflow: 'hidden' }}>
+          {/* Right side: goal number + avg bar */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, color: MUTED, marginBottom: 5, letterSpacing: '-0.005em' }}>
+              Daily goal
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
+              <span style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 400, color: DARK, lineHeight: 1 }}>
+                {required}
+              </span>
+              <span style={{ fontSize: 13, color: MUTED }}>pages / day</span>
+              {delta !== null && (
+                <span style={{
+                  marginLeft: 'auto',
+                  fontSize: 12, fontWeight: 500,
+                  color: delta >= 0 ? '#2a6645' : '#b94f2a',
+                  background: delta >= 0 ? '#eef7f2' : '#fdf0ec',
+                  padding: '3px 8px', borderRadius: 6,
+                }}>
+                  {delta >= 0 ? `${delta}d ahead` : `${Math.abs(delta)}d behind`}
+                </span>
+              )}
+            </div>
+
+            {/* Today's fill bar */}
+            <div>
+              <div style={{ height: 4, borderRadius: 999, background: BORDER, overflow: 'hidden', marginBottom: 5 }}>
                 <div style={{
-                  height: '100%',
-                  borderRadius: 999,
-                  background: avgActual >= required
+                  height: '100%', borderRadius: 999,
+                  background: met
                     ? `linear-gradient(90deg, ${GREEN} 0%, ${GREEN_LIGHT} 100%)`
-                    : '#e8956d',
-                  width: `${Math.min(100, Math.round((avgActual / required) * 100))}%`,
+                    : `linear-gradient(90deg, ${GREEN_LIGHT} 0%, #6baa85 100%)`,
+                  width: `${Math.min(100, Math.round(todayPct * 100))}%`,
                   transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
                 }} />
               </div>
-              <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap', letterSpacing: '-0.005em' }}>
-                avg {avgActual} / day
-              </span>
+              <p style={{ fontSize: 11, color: MUTED, letterSpacing: '-0.005em' }}>
+                {met
+                  ? `Goal met — ${todayPages - required} extra page${todayPages - required === 1 ? '' : 's'} today`
+                  : todayPages > 0
+                    ? `${required - todayPages} more page${required - todayPages === 1 ? '' : 's'} to reach today's goal`
+                    : avgActual
+                      ? `7-day avg ${avgActual} pages / day`
+                      : 'Update your page to track today'}
+              </p>
             </div>
-          )}
-
-          {avgActual === null && (
-            <p style={{ fontSize: 12, color: MUTED, marginTop: 10, letterSpacing: '-0.005em' }}>
-              Update your page daily to see how you're tracking
-            </p>
-          )}
+          </div>
         </div>
       )}
     </div>
