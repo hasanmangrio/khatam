@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { differenceInDays, format, parseISO, isToday, isYesterday } from 'date-fns';
 import { Check, Plus, Trash2, X } from 'lucide-react';
-import type { Store, Khatam, DayReading } from './types';
-import { getStore, addKhatam, deleteKhatam, updateCurrentPage, setGoal, getDailyReadings, TOTAL_PAGES } from './store';
+import type { Store, Khatam, DayReading, ActivityDay } from './types';
+import { getStore, addKhatam, deleteKhatam, updateCurrentPage, setGoal, getDailyReadings, getActivityData, TOTAL_PAGES } from './store';
 
 const SERIF = "'Lora', Georgia, serif";
 const GREEN = '#2a5c3f';
@@ -51,6 +51,7 @@ export default function App() {
   const progress = Math.min(100, ((store.currentPage - 1) / (TOTAL_PAGES - 1)) * 100);
   const pagesLeft = TOTAL_PAGES - store.currentPage;
   const readings = getDailyReadings(store.pageHistory, 7);
+  const activityWeeks = getActivityData(store.pageHistory, store.khatams, 52);
 
   useEffect(() => { setPageInput(String(store.currentPage)); }, [store.currentPage]);
 
@@ -73,7 +74,7 @@ export default function App() {
   }
 
   const shared = {
-    store, setStore, latest, days, progress, pagesLeft, readings,
+    store, setStore, latest, days, progress, pagesLeft, readings, activityWeeks,
     showForm, setShowForm, newDate, setNewDate, newNotes, setNewNotes,
     pageInput, setPageInput, pageSaved, submitKhatam, submitPage,
   };
@@ -92,6 +93,7 @@ type SharedProps = {
   progress: number;
   pagesLeft: number;
   readings: DayReading[];
+  activityWeeks: ActivityDay[][];
   showForm: boolean;
   setShowForm: (v: boolean) => void;
   newDate: string;
@@ -108,7 +110,7 @@ type SharedProps = {
 // ─── Desktop layout ────────────────────────────────────────────────────────────
 function DesktopLayout(p: SharedProps) {
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: BG, overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: BG, overflowY: 'auto' }}>
       {/* Slim top bar */}
       <header style={{
         padding: '0 28px',
@@ -132,7 +134,7 @@ function DesktopLayout(p: SharedProps) {
       </header>
 
       {/* 3-column grid */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: 16, padding: 16, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: 16, padding: 16, height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
 
         {/* LEFT: hero + log + history */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden' }}>
@@ -198,6 +200,11 @@ function DesktopLayout(p: SharedProps) {
             onSelect={(days) => p.setStore(setGoal(days))}
           />
         </div>
+      </div>
+
+      {/* Full-width activity graph */}
+      <div className="activity-container" style={{ padding: '0 16px 16px', position: 'relative' }}>
+        <ActivityGraph weeks={p.activityWeeks} khatamCount={p.store.khatams.length} />
       </div>
     </div>
   );
@@ -267,6 +274,11 @@ function MobileLayout(p: SharedProps) {
             <p style={{ fontSize: 13, color: MUTED }}>Your completions will appear here</p>
           </div>
         )}
+
+        {/* Activity graph */}
+        <div className="activity-container" style={{ position: 'relative' }}>
+          <ActivityGraph weeks={p.activityWeeks} khatamCount={p.store.khatams.length} />
+        </div>
       </main>
 
       <footer style={{ textAlign: 'center', paddingBottom: 40 }}>
@@ -528,6 +540,171 @@ function ReadingSchedule({ readings }: { readings: DayReading[] }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Activity graph ────────────────────────────────────────────────────────────
+
+const CELL = 11;  // px per cell
+const GAP  = 3;   // px gap between cells
+
+// 5 intensity levels (0 = empty)
+function cellColor(pages: number, khatam: boolean): string {
+  if (khatam) return '#c4973a';         // gold for completions
+  if (pages === 0) return '#eceae4';    // empty
+  if (pages <= 5)  return '#c6dbd0';
+  if (pages <= 12) return '#7db89c';
+  if (pages <= 22) return '#4a9070';
+  return '#2a5c3f';
+}
+
+function ActivityGraph({ weeks, khatamCount }: { weeks: ActivityDay[][], khatamCount: number }) {
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  // Build month labels: find the first week where the month changes
+  const monthLabels: { label: string; col: number }[] = [];
+  let lastMonth = '';
+  weeks.forEach((week, col) => {
+    const month = format(parseISO(week[0].date), 'MMM');
+    if (month !== lastMonth) {
+      monthLabels.push({ label: month, col });
+      lastMonth = month;
+    }
+  });
+
+  const totalPages = weeks.flat().reduce((s, d) => s + d.pagesRead, 0);
+  const activeDays = weeks.flat().filter((d) => d.pagesRead > 0).length;
+
+  const DAY_LABELS = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
+
+  return (
+    <div style={{ borderRadius: 20, background: SURFACE, border: `1px solid ${BORDER}`, padding: '22px 24px 20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
+          Reading momentum
+        </span>
+        <div style={{ display: 'flex', gap: 20 }}>
+          {[
+            { value: activeDays, label: 'active days' },
+            { value: totalPages, label: 'pages logged' },
+            { value: khatamCount, label: 'khatams' },
+          ].map(({ value, label }) => (
+            <div key={label} style={{ textAlign: 'right' }}>
+              <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 400, color: DARK }}>{value}</span>
+              <span style={{ fontSize: 11, color: MUTED, marginLeft: 4 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Scrollable graph area */}
+      <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: 4 }}>
+        <div style={{ display: 'inline-flex', flexDirection: 'column', minWidth: 'max-content', position: 'relative' }}>
+
+          {/* Month labels */}
+          <div style={{ display: 'flex', marginBottom: 6, marginLeft: 28 }}>
+            {weeks.map((_, col) => {
+              const lbl = monthLabels.find((m) => m.col === col);
+              return (
+                <div key={col} style={{ width: CELL + GAP, flexShrink: 0 }}>
+                  {lbl && <span style={{ fontSize: 10, color: MUTED, fontWeight: 500 }}>{lbl.label}</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Day labels + grid */}
+          <div style={{ display: 'flex', gap: 0 }}>
+            {/* Day-of-week labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: 6, paddingTop: 1 }}>
+              {DAY_LABELS.map((lbl, i) => (
+                <div key={i} style={{ height: CELL, display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontSize: 9, color: MUTED, fontWeight: 500, width: 22, textAlign: 'right' }}>{lbl}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Columns of cells */}
+            <div style={{ display: 'flex', gap: GAP, position: 'relative' }}>
+              {weeks.map((week, col) => (
+                <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+                  {week.map((day) => {
+                    const isFuture = day.date > format(new Date(), 'yyyy-MM-dd');
+                    return (
+                      <div
+                        key={day.date}
+                        onMouseEnter={(e) => {
+                          const rect = (e.target as HTMLElement).getBoundingClientRect();
+                          const containerRect = (e.target as HTMLElement).closest('.activity-container')?.getBoundingClientRect();
+                          const label = day.khatam
+                            ? `${format(parseISO(day.date), 'MMM d, yyyy')} · Khatam completed${day.pagesRead ? ` · ${day.pagesRead} pages` : ''}`
+                            : day.pagesRead > 0
+                              ? `${format(parseISO(day.date), 'MMM d, yyyy')} · ${day.pagesRead} pages`
+                              : `${format(parseISO(day.date), 'MMM d, yyyy')} · No reading logged`;
+                          setTooltip({
+                            text: label,
+                            x: rect.left - (containerRect?.left ?? 0) + CELL / 2,
+                            y: rect.top - (containerRect?.top ?? 0) - 8,
+                          });
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
+                        style={{
+                          width: CELL,
+                          height: CELL,
+                          borderRadius: 2,
+                          background: isFuture ? 'transparent' : cellColor(day.pagesRead, day.khatam),
+                          border: isFuture ? `1px solid ${BORDER}` : 'none',
+                          cursor: 'default',
+                          transition: 'opacity 0.1s',
+                          flexShrink: 0,
+                          // khatam days get a subtle ring
+                          boxShadow: day.khatam ? `0 0 0 1.5px #c4973a44` : undefined,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Tooltip */}
+              {tooltip && (
+                <div style={{
+                  position: 'absolute',
+                  left: tooltip.x,
+                  top: tooltip.y,
+                  transform: 'translate(-50%, -100%)',
+                  background: DARK,
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  padding: '5px 9px',
+                  borderRadius: 7,
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                  letterSpacing: '-0.005em',
+                }}>
+                  {tooltip.text}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, marginLeft: 28 }}>
+            <span style={{ fontSize: 10, color: MUTED }}>Less</span>
+            {['#eceae4', '#c6dbd0', '#7db89c', '#4a9070', '#2a5c3f'].map((c) => (
+              <div key={c} style={{ width: CELL, height: CELL, borderRadius: 2, background: c, flexShrink: 0 }} />
+            ))}
+            <span style={{ fontSize: 10, color: MUTED }}>More</span>
+            <div style={{ width: 1, height: 10, background: BORDER, margin: '0 4px' }} />
+            <div style={{ width: CELL, height: CELL, borderRadius: 2, background: '#c4973a', flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: MUTED }}>Khatam</span>
+          </div>
+        </div>
       </div>
     </div>
   );

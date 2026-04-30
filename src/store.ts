@@ -1,5 +1,5 @@
-import { format, subDays } from 'date-fns';
-import type { Store, Khatam, PageEntry, DayReading } from './types';
+import { format, subDays, startOfWeek, addDays } from 'date-fns';
+import type { Store, Khatam, PageEntry, DayReading, ActivityDay } from './types';
 
 const KEY = 'khatam-tracker';
 export const TOTAL_PAGES = 604;
@@ -82,6 +82,50 @@ export function setGoal(days: number): Store {
   store.goalDays = days;
   save(store);
   return store;
+}
+
+// Returns numWeeks columns of 7 days each (Sun→Sat), oldest first.
+// The last column ends on the Sunday on or after today so the grid
+// aligns like GitHub's contribution graph.
+export function getActivityData(
+  history: PageEntry[],
+  khatams: Khatam[],
+  numWeeks = 52,
+): ActivityDay[][] {
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const khatamDates = new Set(khatams.map((k) => k.completedAt));
+
+  // Align grid: start from the Sunday numWeeks ago
+  const todayDate = new Date();
+  const gridEnd = addDays(startOfWeek(todayDate, { weekStartsOn: 0 }), 6); // Saturday of this week
+  const gridStart = addDays(gridEnd, -(numWeeks * 7 - 1));
+
+  const weeks: ActivityDay[][] = [];
+  let week: ActivityDay[] = [];
+
+  for (let i = 0; i < numWeeks * 7; i++) {
+    const d = addDays(gridStart, i);
+    const date = format(d, 'yyyy-MM-dd');
+    const prevDate = format(subDays(d, 1), 'yyyy-MM-dd');
+
+    const entry = sorted.find((e) => e.date === date);
+    let pagesRead = 0;
+    if (entry) {
+      const prevEntry = sorted.filter((e) => e.date <= prevDate).at(-1);
+      const startPage = entry.startPage ?? entry.page;
+      const baseline = prevEntry ? prevEntry.page : startPage - 1;
+      pagesRead = Math.max(0, entry.page - baseline);
+    }
+
+    week.push({ date, pagesRead, khatam: khatamDates.has(date) });
+
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  }
+  if (week.length) weeks.push(week);
+  return weeks;
 }
 
 export function getDailyReadings(history: PageEntry[], numDays = 7): DayReading[] {

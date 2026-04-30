@@ -22,3 +22,9 @@ export interface DayReading {
   pagesRead: number | null;  // null = no log that day
   endPage: number | null;
 }
+
+export interface ActivityDay {
+  date: string;      // YYYY-MM-DD
+  pagesRead: number; // 0 if nothing logged
+  khatam: boolean;   // true if a khatam was completed this day
+}
