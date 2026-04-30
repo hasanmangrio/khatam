@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { differenceInDays, format, parseISO, isToday, isYesterday } from 'date-fns';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import type { Store, Khatam, DayReading } from './types';
-import { getStore, addKhatam, deleteKhatam, updateCurrentPage, getDailyReadings, TOTAL_PAGES } from './store';
+import { getStore, addKhatam, deleteKhatam, updateCurrentPage, setGoal, getDailyReadings, TOTAL_PAGES } from './store';
 
 // Lora only for display moments — numbers, dates, the hero stat.
 // Everything else is Inter.
@@ -167,6 +167,14 @@ export default function App() {
 
         {/* Reading schedule */}
         <ReadingSchedule readings={readings} />
+
+        {/* Goal card */}
+        <GoalCard
+          goalDays={store.goalDays}
+          currentPage={store.currentPage}
+          readings={readings}
+          onSelect={(days) => setStore(setGoal(days))}
+        />
 
         {/* Progress card */}
         <div style={{
@@ -393,6 +401,156 @@ export default function App() {
           May Allah accept your recitation
         </p>
       </footer>
+    </div>
+  );
+}
+
+const GOAL_PRESETS: { label: string; sublabel: string; days: number }[] = [
+  { label: '1 week',    sublabel: 'Ramadan pace', days: 7   },
+  { label: '2 weeks',  sublabel: 'Intensive',     days: 14  },
+  { label: '1 month',  sublabel: 'Monthly',       days: 30  },
+  { label: '2 months', sublabel: 'Steady',        days: 60  },
+  { label: '3 months', sublabel: 'Relaxed',       days: 90  },
+  { label: '6 months', sublabel: 'Gentle',        days: 180 },
+];
+
+function GoalCard({
+  goalDays,
+  currentPage,
+  readings,
+  onSelect,
+}: {
+  goalDays?: number;
+  currentPage: number;
+  readings: DayReading[];
+  onSelect: (days: number) => void;
+}) {
+  const required = goalDays ? Math.ceil(TOTAL_PAGES / goalDays) : null;
+
+  // Average pages/day over the last 7 logged days
+  const loggedDays = readings.filter((r) => r.pagesRead !== null && r.pagesRead > 0);
+  const avgActual = loggedDays.length
+    ? Math.round(loggedDays.reduce((s, r) => s + r.pagesRead!, 0) / loggedDays.length)
+    : null;
+
+  // How far ahead/behind vs goal, given current page
+  const pagesLeft = TOTAL_PAGES - currentPage;
+  let daysToFinishAtGoal: number | null = null;
+  let daysToFinishAtActual: number | null = null;
+  if (required) daysToFinishAtGoal = Math.ceil(pagesLeft / required);
+  if (avgActual) daysToFinishAtActual = Math.ceil(pagesLeft / avgActual);
+
+  const delta = (daysToFinishAtActual !== null && daysToFinishAtGoal !== null)
+    ? daysToFinishAtGoal - daysToFinishAtActual
+    : null;
+
+  return (
+    <div style={{ borderRadius: 20, background: SURFACE, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ padding: '22px 22px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: DARK, letterSpacing: '-0.01em' }}>
+            Khatam goal
+          </span>
+          {goalDays && (
+            <span style={{ fontSize: 12, color: MUTED }}>
+              Every {GOAL_PRESETS.find((p) => p.days === goalDays)?.label ?? `${goalDays} days`}
+            </span>
+          )}
+        </div>
+
+        {/* Preset chips */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {GOAL_PRESETS.map((preset) => {
+            const active = goalDays === preset.days;
+            return (
+              <button
+                key={preset.days}
+                onClick={() => onSelect(preset.days)}
+                style={{
+                  padding: '10px 8px',
+                  borderRadius: 12,
+                  border: `1.5px solid ${active ? GREEN : BORDER}`,
+                  background: active ? `${GREEN}0f` : BG,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: active ? GREEN : DARK, letterSpacing: '-0.01em' }}>
+                  {preset.label}
+                </div>
+                <div style={{ fontSize: 10, color: active ? GREEN : MUTED, marginTop: 2, opacity: active ? 0.8 : 1 }}>
+                  {preset.sublabel}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Required pace — shown once a goal is set */}
+      {required && (
+        <div style={{ borderTop: `1px solid ${BORDER}`, padding: '18px 22px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: 12, color: MUTED, marginBottom: 4, letterSpacing: '-0.005em' }}>
+                Pages needed per day
+              </p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 400, color: DARK, lineHeight: 1 }}>
+                  {required}
+                </span>
+                <span style={{ fontSize: 13, color: MUTED }}>pages / day</span>
+              </div>
+            </div>
+
+            {/* On-track indicator */}
+            {avgActual !== null && delta !== null && (
+              <div style={{
+                padding: '8px 14px',
+                borderRadius: 10,
+                background: delta >= 0 ? '#f0faf4' : '#fdf3f0',
+                border: `1px solid ${delta >= 0 ? '#bbddc9' : '#f4c5b4'}`,
+                textAlign: 'center',
+              }}>
+                <p style={{ fontSize: 18, fontFamily: SERIF, fontWeight: 400, color: delta >= 0 ? '#2a6645' : '#b94f2a', lineHeight: 1 }}>
+                  {delta >= 0 ? `${delta}d` : `${Math.abs(delta)}d`}
+                </p>
+                <p style={{ fontSize: 10, fontWeight: 500, color: delta >= 0 ? '#3d8a5e' : '#c86040', marginTop: 3, letterSpacing: '0.02em' }}>
+                  {delta >= 0 ? 'ahead' : 'behind'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Actual vs required */}
+          {avgActual !== null && (
+            <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, height: 4, borderRadius: 999, background: BORDER, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  borderRadius: 999,
+                  background: avgActual >= required
+                    ? `linear-gradient(90deg, ${GREEN} 0%, ${GREEN_LIGHT} 100%)`
+                    : '#e8956d',
+                  width: `${Math.min(100, Math.round((avgActual / required) * 100))}%`,
+                  transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
+                }} />
+              </div>
+              <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap', letterSpacing: '-0.005em' }}>
+                avg {avgActual} / day
+              </span>
+            </div>
+          )}
+
+          {avgActual === null && (
+            <p style={{ fontSize: 12, color: MUTED, marginTop: 10, letterSpacing: '-0.005em' }}>
+              Update your page daily to see how you're tracking
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

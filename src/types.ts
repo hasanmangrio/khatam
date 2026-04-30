@@ -13,6 +13,7 @@ export interface Store {
   khatams: Khatam[];
   currentPage: number;
   pageHistory: PageEntry[];
+  goalDays?: number; // target khatam cycle in days
 }
 
 export interface DayReading {

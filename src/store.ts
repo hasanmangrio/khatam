@@ -74,6 +74,13 @@ function pageOnOrBefore(history: PageEntry[], date: string): number | null {
   return candidates.length ? candidates[candidates.length - 1].page : null;
 }
 
+export function setGoal(days: number): Store {
+  const store = load();
+  store.goalDays = days;
+  save(store);
+  return store;
+}
+
 export function getDailyReadings(history: PageEntry[], numDays = 7): DayReading[] {
   return Array.from({ length: numDays }, (_, i) => {
     const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
