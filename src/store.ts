@@ -55,11 +55,11 @@ export function updateCurrentPage(page: number): Store {
   // Record today's page snapshot — one entry per day, always latest wins
   const today = format(new Date(), 'yyyy-MM-dd');
   const existing = store.pageHistory.findIndex((e) => e.date === today);
-  const entry: PageEntry = { date: today, page: clamped };
   if (existing >= 0) {
-    store.pageHistory[existing] = entry;
+    // Keep the original startPage so intra-day diff stays correct
+    store.pageHistory[existing] = { ...store.pageHistory[existing], page: clamped };
   } else {
-    store.pageHistory.push(entry);
+    store.pageHistory.push({ date: today, page: clamped, startPage: clamped });
   }
 
   save(store);
@@ -90,7 +90,9 @@ export function getDailyReadings(history: PageEntry[], numDays = 7): DayReading[
     if (!todayEntry) return { date, pagesRead: null, endPage: null };
 
     const prevPage = pageOnOrBefore(history, prevDate);
-    const pagesRead = prevPage !== null ? Math.max(0, todayEntry.page - prevPage) : null;
+    // Prefer cross-day diff; fall back to intra-day diff via startPage
+    const baseline = prevPage ?? (todayEntry.startPage - 1);
+    const pagesRead = Math.max(0, todayEntry.page - baseline);
 
     return { date, pagesRead, endPage: todayEntry.page };
   });

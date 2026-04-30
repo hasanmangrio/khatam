@@ -5,8 +5,9 @@ export interface Khatam {
 }
 
 export interface PageEntry {
-  date: string;  // YYYY-MM-DD
-  page: number;
+  date: string;      // YYYY-MM-DD
+  page: number;      // latest page set this day
+  startPage: number; // first page set this day (baseline for intra-day diff)
 }
 
 export interface Store {
